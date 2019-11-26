@@ -59,6 +59,13 @@ import './zone-flags.ts';
  */
 
 import 'zone.js/dist/zone';  // Included with Angular CLI.
+import * as process from 'process';
+
+(window as any).global = window;
+// @ts-ignore
+window.Buffer = window.Buffer || require('buffer').Buffer;
+window['process'] = process;
+
 
 
 /***************************************************************************************************

@@ -1,5 +1,7 @@
 {
   "name": "ionic-couch-auth",
-  "integrations": {},
+  "integrations": {
+    "cordova": {}
+  },
   "type": "angular"
 }
