@@ -50,8 +50,21 @@ export class AppComponent {
   }
 
   logout() {
-    this.authService.logout();
-    this.navCtrl.navigateRoot('/landing');
+    this.authService.logout().subscribe(
+        data => {
+
+          console.log(JSON.stringify(data));
+          this.alertService.presentToast('Logged Out');
+        },
+        error => {
+          console.log(error);
+        },
+        () => {
+        //  this.dismissLogin();
+          this.navCtrl.navigateRoot('/landing');
+        }
+    );
+
  /*   this.authService.logout().subscribe(
         data => {
           this.alertService.presentToast(data['message']);

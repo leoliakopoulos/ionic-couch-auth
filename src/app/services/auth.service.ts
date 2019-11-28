@@ -14,6 +14,7 @@ import * as cookie from 'cookie';
 import {Observable} from 'rxjs';
 import {CookieService} from 'ngx-cookie-service';
 import {createConsoleLogger} from '@angular-devkit/core/node';
+
 @Injectable({
   providedIn: 'root'
 })
@@ -40,16 +41,20 @@ export class AuthService {
 
      login(email: String, password: String)  {
                         const headers = new HttpHeaders({
-                            'Content-Type': 'application/json',
-                             observe: 'response'
-                            });
+                            'Content-Type': 'application/json'
+                           // , Authorization: 'Basic ' + btoa(email + ':' + password)
+                            // , 'Access-Control-Expose-Headers': 'X-Total-Count',
 
-                        return this.http.post(this.env.API_URL + '/_session' , { username : email,  password}, { observe: 'response' , withCredentials: true} )
+                        });
+
+                        return this.http.post(this.env.API_URL + '/_session' , { username : email,  password}, { headers , observe: 'response' , withCredentials: true  } )
                                     .pipe(tap(response =>  {
 
                                        // this.myCookie = response.headers.keys;
-                                        this.myCookie = response.headers.get('set-cookie');
-                                        console.log('cookie :' +  JSON.stringify(response.headers.get('set-cookie')));
+                                        this.myCookie = email;
+                                      //  response.headers.keys();
+                                      //  console.log('cookie :' + response.headers.keys());
+
                                         this.storage.set('token', this.myCookie)
                                             .then(
                                                 () => {
@@ -113,9 +118,27 @@ export class AuthService {
   }
 
   logout() {
-      this.storage.remove('token');
-      this.isLoggedIn = false;
-      delete this.token;
+      const headers = new HttpHeaders({
+          'Content-Type': 'application/json'
+          // , Authorization: 'Basic ' + btoa(email + ':' + password)
+          // , 'Access-Control-Expose-Headers': 'X-Total-Count',
+
+      });
+
+      return this.http.delete(this.env.API_URL + '/_session'  )
+          .pipe(tap(response =>  {
+
+              this.storage.remove('token');
+              this.isLoggedIn = false;
+              delete this.token;
+
+
+              return response;
+
+
+          }));
+
+
   /*  const headers = new HttpHeaders({
       Authorization: this.token.token_type + ' ' + this.token.access_token
     });
