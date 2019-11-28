@@ -40,8 +40,11 @@ export class LoginPage implements OnInit {
   }
 
   login(form: NgForm) {
+    console.log('aoua');
     this.authService.login(form.value.email, form.value.password).subscribe(
       data => {
+
+        console.log(JSON.stringify(data));
         this.alertService.presentToast('Logged In');
       },
       error => {

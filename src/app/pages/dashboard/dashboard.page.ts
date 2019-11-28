@@ -22,11 +22,11 @@ export class DashboardPage implements OnInit {
   }
 
   ionViewWillEnter() {
-    this.authService.user().subscribe(
+  /*  this.authService.user().subscribe(
       user => {
         this.user = user;
       }
-    );
+    );*/
   }
 
 }

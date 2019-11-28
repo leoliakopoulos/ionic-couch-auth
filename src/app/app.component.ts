@@ -50,7 +50,9 @@ export class AppComponent {
   }
 
   logout() {
-    this.authService.logout().subscribe(
+    this.authService.logout();
+    this.navCtrl.navigateRoot('/landing');
+ /*   this.authService.logout().subscribe(
         data => {
           this.alertService.presentToast(data['message']);
         },
@@ -60,6 +62,6 @@ export class AppComponent {
         () => {
           this.navCtrl.navigateRoot('/landing');
         }
-    );
+    );*/
   }
 }

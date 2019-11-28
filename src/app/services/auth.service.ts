@@ -1,15 +1,19 @@
 import { Injectable } from '@angular/core';
-import {ToastController} from '@ionic/angular';
+import {Platform, ToastController} from '@ionic/angular';
 import {Router} from '@angular/router';
 import {EnvService} from './env.service';
 import {NativeStorage} from '@ionic-native/native-storage/ngx';
-import {HttpClient, HttpHeaders} from '@angular/common/http';
+import { Storage } from '@ionic/storage';
+import {HttpClient, HttpHeaders, HttpResponse} from '@angular/common/http';
 import {tap} from 'rxjs/operators';
 import {User} from '../model/user';
 import * as Nano from 'nano';
 import * as nano from 'nano';
 import {Querystring} from 'request/lib/querystring.js';
-
+import * as cookie from 'cookie';
+import {Observable} from 'rxjs';
+import {CookieService} from 'ngx-cookie-service';
+import {createConsoleLogger} from '@angular-devkit/core/node';
 @Injectable({
   providedIn: 'root'
 })
@@ -17,34 +21,56 @@ export class AuthService {
   isLoggedIn = false;
   token: any;
   _users: any;
+  myCookie: any;
   constructor(private http: HttpClient,
-              private storage: NativeStorage,
+             // private storage: NativeStorage,
               private env: EnvService,
               private router: Router,
-              private toastController: ToastController) {
+              private toastController: ToastController,
+              private cookieService: CookieService,
+              private platform: Platform,
+              private storage: Storage) {
       Querystring.prototype.unescape = val => val;
-      this._users = nano(this.env.API_URL).use('_users');
+      const nano = Nano(this.env.API_URL);
+      this._users = nano.use('_users');
 
   }
 
-  login(email: String, password: String) {
-    return this.http.post(this.env.API_URL + 'auth/login',
-        {email, password}
-    ).pipe(
-        tap(token => {
-          this.storage.setItem('token', token)
-              .then(
-                  () => {
-                    console.log('Token Stored');
-                  },
-                  error => console.error('Error storing item', error)
-              );
-          this.token = token;
-          this.isLoggedIn = true;
-          return token;
-        }),
-    );
-  }
+
+
+     login(email: String, password: String)  {
+                        const headers = new HttpHeaders({
+                            'Content-Type': 'application/json',
+                             observe: 'response'
+                            });
+
+                        return this.http.post(this.env.API_URL + '/_session' , { username : email,  password}, { observe: 'response' , withCredentials: true} )
+                                    .pipe(tap(response =>  {
+
+                                       // this.myCookie = response.headers.keys;
+                                        this.myCookie = response.headers.get('set-cookie');
+                                        console.log('cookie :' +  JSON.stringify(response.headers.get('set-cookie')));
+                                        this.storage.set('token', this.myCookie)
+                                            .then(
+                                                () => {
+                                                    console.log('Token Stored : ' + this.myCookie);
+                                                },
+                                                error => console.error('Error storing item', error)
+                                            );
+                                        this.token = this.myCookie;
+                                        this.isLoggedIn = true;
+
+
+                                      //  console.log(JSON.stringify('all the headers :' + response.headers.getAll));
+                                        response = this.myCookie;
+
+                                        return this.myCookie;
+
+
+                    }));
+     }
+
+
 
   register(fName: String, lName: String, email: String, password: String) {
       // create a new user
@@ -56,7 +82,7 @@ export class AuthService {
       };
 
 // add dummy user to db
-      return this._users.insert(user, 'org.couchdb.user:' + email, (err, body) => {
+      return new Observable( this._users.insert(user, 'org.couchdb.user:' + email, (err, body) => {
           if (err) { console.log(err); }
           console.log(body);
           // {
@@ -64,7 +90,7 @@ export class AuthService {
           //   id: 'org.couchdb.user:john',
           //   rev: '1-88146d8127296b34714569043cbac455'
           // }
-      });
+      }));
 
 
 /*    const headers = new HttpHeaders()
@@ -87,7 +113,10 @@ export class AuthService {
   }
 
   logout() {
-    const headers = new HttpHeaders({
+      this.storage.remove('token');
+      this.isLoggedIn = false;
+      delete this.token;
+  /*  const headers = new HttpHeaders({
       Authorization: this.token.token_type + ' ' + this.token.access_token
     });
 
@@ -99,7 +128,7 @@ export class AuthService {
               delete this.token;
               return data;
             })
-        );
+        );*/
   }
 
   user() {
@@ -116,17 +145,19 @@ export class AuthService {
   }
 
   getToken() {
-    return this.storage.getItem('token').then(
+    return this.storage.get('token').then(
         data => {
           this.token = data;
 
           if (this.token != null) {
             this.isLoggedIn = true;
+            console.log('token on start up:' + JSON.stringify(this.token));
           } else {
             this.isLoggedIn = false;
           }
         },
         error => {
+          console.log('token on start up error: ' + JSON.stringify(this.token));
           this.token = null;
           this.isLoggedIn = false;
         }
